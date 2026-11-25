@@ -105,6 +105,14 @@ pg_restore --clean --no-owner --no-acl --dbname "$NEW_DATABASE_URL" umami.dump
 
 Then point `DATABASE_URL` and `DIRECT_DATABASE_URL` at the restored database and redeploy.
 
+## Vercel build notes
+
+- Vercel does not upload the repository's `.gitignore` into the build sandbox. Biome 2.5 is
+  configured with `vcs.useIgnoreFile: true`, so `build:tracker:types` fails with
+  “Biome couldn't find an ignore file”. `vercel.json` creates an empty `.gitignore` in the install
+  step before pnpm installs. The file is a build-sandbox shim; it is not committed.
+- If Vercel ever includes `.gitignore` again, the `touch` is harmless.
+
 ## Upgrades
 
 1. Take a backup (run the workflow or `pg_dump`).
