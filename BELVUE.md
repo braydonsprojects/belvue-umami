@@ -7,7 +7,7 @@ This repository is **Belvue Christian Church's pinned fork** of
 - Pinned tag: **v3.5.0**
 - Deploy branch: **`production`**
 - Host: **Vercel Hobby**
-- Database: **Neon Free PostgreSQL** (US East, `aws-us-east-1`)
+- Database: **Neon Free PostgreSQL 18** (US East, `aws-us-east-1`)
 - Public URL: `https://stats.belvuechristianchurch.com`
 - Church site integration: `braydonsprojects/belvue-christian-church-site`
   (`docs/analytics.md`, `docs/plans/umami-rollout.md`)
@@ -41,12 +41,17 @@ Set these in Vercel → Project → Settings → Environment Variables. They are
 
 | Name | Value |
 | --- | --- |
-| `DATABASE_URL` | Neon **pooled** connection string, with `sslmode=require&pgbouncer=true` |
-| `DIRECT_DATABASE_URL` | Neon **direct** connection string, with `sslmode=require`; used for Prisma migrations |
+| `DATABASE_URL` | Neon **pooled** connection string, with `sslmode=require`; add `pgbouncer=true` only if Prisma reports a prepared-statement error |
+| `DIRECT_DATABASE_URL` | Neon **direct** connection string (the `DATABASE_URL_UNPOOLED` value), with `sslmode=require`; used for Prisma migrations |
 | `APP_SECRET` | `openssl rand -hex 32`; unique, never rotate casually (it signs sessions) |
 | `DISABLE_TELEMETRY` | `1` |
 | `FORCE_SSL` | `1` |
 | `NODE_VERSION` | `22` |
+
+`neon deploy` pulls `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED` (direct) into the local
+env file. The app reads `DATABASE_URL` at runtime and `DIRECT_DATABASE_URL` for schema migrations,
+so set `DIRECT_DATABASE_URL` in Vercel to the `DATABASE_URL_UNPOOLED` value. `prisma.config.ts`
+uses `DATABASE_URL`; `scripts/check-db.js` uses `DIRECT_DATABASE_URL` for the migration step.
 
 If the first build fails on a Prisma/PgBouncer prepared-statement error, point `DATABASE_URL` at
 the **direct** string and redeploy. At the church's traffic level, connection count is not a
@@ -70,13 +75,13 @@ problem. Record the outcome here.
 ## Backups
 
 `.github/workflows/backup.yml` runs monthly (`0 6 1 * *`) and on demand. It dumps the database with
-`postgres:17`'s `pg_dump` and uploads the custom-format dump as a 90-day workflow artifact.
+`postgres:18`'s `pg_dump` and uploads the custom-format dump as a 90-day workflow artifact.
 
 - Repository secret: `NEON_DIRECT_URL` (the direct Neon string, not the pooled one).
 - Run it once manually after setup, download the dump, and restore it into a throwaway Neon branch
   to prove the procedure.
 
-Restore, using a `postgres:17` image or a matching client:
+Restore, using a `postgres:18` image or a matching client:
 
 ```bash
 pg_restore --clean --no-owner --no-acl --dbname "$NEW_DATABASE_URL" umami.dump
