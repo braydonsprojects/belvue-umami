@@ -111,6 +111,14 @@ The first production deployment initially failed three times: quoted Neon URLs m
 `new URL()` throw, Biome could not find `.gitignore` in the build sandbox, and the custom build
 command used the sandbox's default pnpm. The fixes are in the environment and build notes above.
 
+## Uptime
+
+`.github/workflows/uptime.yml` curls `https://stats.belvuechristianchurch.com/api/heartbeat`
+every 15 minutes and fails the job on a non-200. GitHub emails the repository owner when the
+scheduled job fails. It is free and needs no external account. GitHub disables scheduled workflows
+after 60 days without repository activity; run the workflow manually or push a commit to
+re-enable it. Run it manually after setup; the Actions tab shows the runs.
+
 ## Backups
 
 `.github/workflows/backup.yml` runs monthly (`0 6 1 * *`) and on demand. It dumps the database with

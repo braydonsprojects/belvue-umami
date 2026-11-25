@@ -1,0 +1,28 @@
+name: Check Umami uptime
+
+# A free uptime check: GitHub emails the repository owner when the job fails.
+# GitHub disables scheduled workflows after 60 days without repository activity;
+# run this workflow manually (or push a commit) to re-enable it.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    name: /api/heartbeat
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check the heartbeat
+        run: |
+          status=$(curl -fsS -o /dev/null -w '%{http_code}' \
+            --retry 3 --retry-delay 10 --max-time 20 \
+            https://stats.belvuechristianchurch.com/api/heartbeat)
+          echo "heartbeat ${status}"
+          test "$status" = "200"
