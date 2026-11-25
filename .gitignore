@@ -61,3 +61,5 @@ yarn-error.log*
 # local PR review worktrees
 /.review-pr-*/
 .neon
+.vercel
+.env*

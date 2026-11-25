@@ -22,6 +22,10 @@ The parent `README.md` is upstream's. This file is the runbook for this deployme
 | Neon project | `old-meadow-70904627` ("Belvue Christian Church Analytics") |
 | Neon branch | `production` (default) |
 | Neon region / version | `aws-us-east-1`, Postgres 18 |
+| Vercel project | `belvue-christian-church/belvue-umami` (`prj_LpkhJunRmwsjVSEdZn0LF1oaArN8`) |
+| Production URL | `https://belvue-umami.vercel.app` (requires Vercel Authentication) |
+| Public URL | `https://stats.belvuechristianchurch.com` |
+| Node.js | 22.x (project setting) |
 | Umami website | `Belvue Christian Church` (`belvuechristianchurch.com`) |
 | Umami website ID | `58ebfc66-d07e-4ec4-8b68-1cfb66cbe7b1` |
 
@@ -43,10 +47,11 @@ Import `braydonsprojects/belvue-umami` as a Vercel project with:
 | Framework Preset | Next.js |
 | Root Directory | `.` |
 | Install Command | `npx --yes pnpm@12.3.4 install --frozen-lockfile` (already in `vercel.json`) |
-| Build Command | `pnpm build` (auto-detected) |
+| Build Command | `printf 'node_modules\n.next\n' > .gitignore && npx --yes pnpm@12.3.4 run build` (project setting; see build notes) |
 | Output Directory | `.next` (auto-detected) |
 | Node.js Version | 22.x |
 | Production Branch | `production` |
+| Deployment Protection | All deployments except custom domains (the custom domain is public; `*.vercel.app` requires Vercel Authentication) |
 
 `vercel.json` also sends `X-Robots-Tag: noindex` on every response, so the analytics host is not
 indexed. The church site is the only public origin that should appear in search.
@@ -62,7 +67,17 @@ Set these in Vercel → Project → Settings → Environment Variables. They are
 | `APP_SECRET` | `openssl rand -hex 32`; unique, never rotate casually (it signs sessions) |
 | `DISABLE_TELEMETRY` | `1` |
 | `FORCE_SSL` | `1` |
-| `NODE_VERSION` | `22` |
+
+Node 22 is a Vercel **project setting** (`vercel project update … --node-version 22.x`), not an
+environment variable. All five variables above are set for **Production**.
+
+The Neon CLI writes the connection strings **quoted** into `.env`. `dotenv` strips the quotes
+locally, but `vercel env add --value` does not: a quoted value reaches the build as
+`"postgresql://…"` and `new URL()` fails in `scripts/check-db.js`. Strip the surrounding quotes
+before adding the value to Vercel. The current values were added unquoted; the build connects.
+
+`vercel env pull` writes `[SENSITIVE]` placeholders for secret values. Pull the real strings from
+Neon (`neon env pull`) or copy them from the Neon dashboard; never paste them into the repo.
 
 `neon deploy` pulls `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED` (direct) into the local
 env file. The app reads `DATABASE_URL` at runtime and `DIRECT_DATABASE_URL` for schema migrations,
@@ -73,29 +88,39 @@ If the first build fails on a Prisma/PgBouncer prepared-statement error, point `
 the **direct** string and redeploy. At the church's traffic level, connection count is not a
 problem. Record the outcome here.
 
-## First boot
+## First boot (completed 2026-11-24)
 
-1. Deploy. The build creates the Umami tables.
-2. Open the deployment URL. Sign in `admin` / `umami`; **change the password immediately**.
-3. Add the website `belvuechristianchurch.com`.
-4. Create a view-only user (`belvue-site`).
-5. Create a team (`Belvue`), transfer the website to it, and add the view-only user with the
-   `team-view-only` role. Without the team the view-only API key sees no websites.
-6. Sign in as the view-only user and create an API key. Store it in the church password manager;
+1. Deployed. The build created the Umami tables.
+2. Signed in `admin` / `umami` and **changed the password**. The old password now returns 401.
+3. Added the website `belvuechristianchurch.com`, name `Belvue Christian Church`.
+4. Created the view-only user (`belvue-site`).
+5. Created the team (`Belvue`), transferred the website to it, and added the view-only user with
+   the `team-view-only` role. Without the team the view-only API key sees no websites.
+6. Signed in as the view-only user and created an API key. It is kept outside the repository;
    it becomes `UMAMI_API_KEY` on the church site.
-7. Add `stats.belvuechristianchurch.com` to the Vercel project. At the DNS host:
-   CNAME `stats` → `cname.vercel-dns.com`, **DNS only** (grey cloud at Cloudflare).
-8. Confirm `https://stats.belvuechristianchurch.com/api/heartbeat` is 200 and the root is 200, not
-   401. Production must not be behind Vercel Authentication.
+7. Added `stats.belvuechristianchurch.com` to the Vercel project. At Cloudflare, the CNAME is:
+   `stats` → `e76bfe628213bb09.vercel-dns-017.com`, **DNS only** (grey cloud). Vercel recommended
+   this project-specific target; `cname.vercel-dns.com` is the generic fallback. Record ID
+   `e4c9ad6d51876bc68ef7953e0c3bd423`.
+8. Verified `https://stats.belvuechristianchurch.com/api/heartbeat` 200, the root 200,
+   `/script.js` 200, and an admin login plus the `Belvue Christian Church` dashboard through the
+   custom domain. Production is public on the custom domain; `*.vercel.app` stays behind Vercel
+   Authentication because protection is “all deployments except custom domains”.
+
+The first production deployment initially failed three times: quoted Neon URLs made
+`new URL()` throw, Biome could not find `.gitignore` in the build sandbox, and the custom build
+command used the sandbox's default pnpm. The fixes are in the environment and build notes above.
 
 ## Backups
 
 `.github/workflows/backup.yml` runs monthly (`0 6 1 * *`) and on demand. It dumps the database with
 `postgres:18`'s `pg_dump` and uploads the custom-format dump as a 90-day workflow artifact.
 
-- Repository secret: `NEON_DIRECT_URL` (the direct Neon string, not the pooled one).
-- Run it once manually after setup, download the dump, and restore it into a throwaway Neon branch
-  to prove the procedure.
+- Repository secret: `NEON_DIRECT_URL` (the direct Neon string, not the pooled one). Set
+  2026-11-24.
+- Ran manually 2026-11-24: [run 45527385891](https://github.com/braydonsprojects/belvue-umami/actions/runs/45527385891)
+  succeeded (dump and upload). Download the artifact and restore it into a throwaway Neon branch
+  to prove the restore procedure.
 
 Restore, using a `postgres:18` image or a matching client:
 
