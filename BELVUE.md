@@ -117,7 +117,8 @@ command used the sandbox's default pnpm. The fixes are in the environment and bu
 every 15 minutes and fails the job on a non-200. GitHub emails the repository owner when the
 scheduled job fails. It is free and needs no external account. GitHub disables scheduled workflows
 after 60 days without repository activity; run the workflow manually or push a commit to
-re-enable it. Run it manually after setup; the Actions tab shows the runs.
+re-enable it. Run manually 2026-11-24: [run 45527750552](https://github.com/braydonsprojects/belvue-umami/actions/runs/45527750552)
+succeeded.
 
 ## Backups
 
