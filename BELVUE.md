@@ -113,8 +113,11 @@ Then point `DATABASE_URL` and `DIRECT_DATABASE_URL` at the restored database and
   `.gitignore` before `pnpm run build`:
 
   ```text
-  printf 'node_modules\n.next\n' > .gitignore && pnpm run build
+  printf 'node_modules\n.next\n' > .gitignore && npx --yes pnpm@12.3.4 run build
   ```
+
+  `npx` pins pnpm 12.3.4 because a custom Vercel build command otherwise uses the sandbox's
+  default pnpm, which fails the `engines.pnpm` check.
 
   The file is a build-sandbox shim; it is not committed. If Vercel ever includes `.gitignore`
   again, the redirect is harmless.
