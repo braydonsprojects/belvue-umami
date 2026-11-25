@@ -109,9 +109,17 @@ Then point `DATABASE_URL` and `DIRECT_DATABASE_URL` at the restored database and
 
 - Vercel does not upload the repository's `.gitignore` into the build sandbox. Biome 2.5 is
   configured with `vcs.useIgnoreFile: true`, so `build:tracker:types` fails with
-  “Biome couldn't find an ignore file”. `vercel.json` creates an empty `.gitignore` in the install
-  step before pnpm installs. The file is a build-sandbox shim; it is not committed.
-- If Vercel ever includes `.gitignore` again, the `touch` is harmless.
+  “Biome couldn't find an ignore file”. The Vercel project's **Build Command** creates a small
+  `.gitignore` before `pnpm run build`:
+
+  ```text
+  printf 'node_modules\n.next\n' > .gitignore && pnpm run build
+  ```
+
+  The file is a build-sandbox shim; it is not committed. If Vercel ever includes `.gitignore`
+  again, the redirect is harmless.
+- This setting lives in the Vercel project, not in the repository. Reapply it if the project is
+  recreated.
 
 ## Upgrades
 

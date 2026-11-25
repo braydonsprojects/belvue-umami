@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "touch .gitignore && npx --yes pnpm@12.3.4 install --frozen-lockfile",
+  "installCommand": "npx --yes pnpm@12.3.4 install --frozen-lockfile",
   "headers": [
     {
       "source": "/(.*)",
