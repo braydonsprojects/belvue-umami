@@ -1,0 +1,46 @@
+name: Back up Umami database
+
+on:
+  schedule:
+    # 06:00 UTC on the first of each month (1am Eastern in standard time).
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    name: pg_dump
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check the database secret is present
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DIRECT_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::NEON_DIRECT_URL is missing. Add the Neon direct connection string as a repository secret."
+            exit 1
+          fi
+
+      - name: Dump the database
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DIRECT_URL }}
+        run: |
+          mkdir -p backup
+          # Match the Neon major version so pg_dump can read the server.
+          docker run --rm -e DATABASE_URL postgres:17 \
+            sh -c 'pg_dump --format=custom --no-owner --no-acl --dbname "$DATABASE_URL"' \
+            > backup/umami.dump
+          test -s backup/umami.dump
+          ls -lh backup/umami.dump
+
+      - name: Upload the dump
+        uses: actions/upload-artifact@v7
+        with:
+          name: umami-database-${{ github.run_id }}
+          path: backup/umami.dump
+          retention-days: 90
+          if-no-files-found: error
