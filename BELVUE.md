@@ -14,6 +14,22 @@ This repository is **Belvue Christian Church's pinned fork** of
 
 The parent `README.md` is upstream's. This file is the runbook for this deployment.
 
+## This deployment
+
+| Thing | Value |
+| --- | --- |
+| Neon organization | `org-little-dust-56688999` |
+| Neon project | `old-meadow-70904627` ("Belvue Christian Church Analytics") |
+| Neon branch | `production` (default) |
+| Neon region / version | `aws-us-east-1`, Postgres 18 |
+| Umami website | `Belvue Christian Church` (`belvuechristianchurch.com`) |
+| Umami website ID | `58ebfc66-d07e-4ec4-8b68-1cfb66cbe7b1` |
+
+The admin password, the view-only user's password and the view-only API key are in the church
+password manager / the operator's local secret store. They are not in this repository. The
+throwaway `Belvue Neon Proof` website used for the first end-to-end check was deleted; only the
+real website remains.
+
 **Do not edit Umami application code in this fork.** The fork exists so the deployed version is
 pinned and so the database backup workflow lives next to the database. Upgrades are upstream tag
 merges; anything else makes the next merge harder.
@@ -113,6 +129,20 @@ backup stops, run it manually and re-enable the workflow in the Actions tab.
 
 The church site repository has a local Umami stack (`docker-compose.umami.yml`) for testing the
 tracker and API without touching this deployment. See its `docs/plans/umami-rollout.md`.
+
+### Build under an AI coding agent
+
+Next 16.4.2 stops an agent-driven `npm run build` with a `SecurityFatalError` because the
+installed version is affected by a known security advisory. Vercel's CI is not an agent and is not
+affected. For a local agent build, run the command with the agent detection variables cleared:
+
+```bash
+env -u AI_AGENT -u OPENCODE -u OPENCODE_CLIENT -u OPENCODE_SESSION_ID -u OPENCODE_TERMINAL npm run build
+```
+
+That is a local workaround, not a fix. The recommended action is the security upgrade
+`next upgrade --agent=security` after the operator approves it; it is deliberately not run by this
+deployment setup.
 
 ## Security
 
